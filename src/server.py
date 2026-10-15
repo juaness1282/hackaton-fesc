@@ -26,3 +26,25 @@ def beneficiaries(document: str):
 @api.get("/api/v1/companies/{id}", dependencies=[Depends(consumer)])
 def company(id: str):
     return found(db_adapter.get_company(id))
+
+from datetime import date
+import re
+from pydantic import BaseModel, Field, ConfigDict
+from fastapi.responses import JSONResponse
+
+class RetirementInput(BaseModel):
+    model_config=ConfigDict(str_strip_whitespace=True, extra="forbid")
+    requestId: str=Field(min_length=1,max_length=128)
+    date: date
+    reason: str=Field(min_length=1,max_length=200)
+
+@api.post("/api/v1/members/{document}/retirements")
+def retirement(document: str, body: RetirementInput, author: str=Depends(consumer)):
+    if not re.fullmatch(r"[0-9]{1,15}",document):
+        raise HTTPException(422,"Documento inválido")
+    try:
+        result=db_adapter.save_retirement(document,body.requestId,body.date,body.reason,author)
+    except db_adapter.ReusedRequest:
+        raise HTTPException(409,"requestId pertenece a otra solicitud")
+    created,movement=found(result)
+    return JSONResponse(status_code=201 if created else 200,content={"requestId":body.requestId,"movement":movement,"status":"completed"})

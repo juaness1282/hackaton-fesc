@@ -54,3 +54,22 @@ def get_company(identifier):
         query = sql.SQL("SELECT e.cod_emp AS id, e.nom_emp AS name, (SELECT count(*) FROM {table} p WHERE p.cod_emp=e.cod_emp AND p.{status}='A') AS total FROM empresa e WHERE e.cod_emp=%s").format(table=sql.Identifier(table), status=sql.Identifier(status))
         row = db.execute(query, (identifier,)).fetchone()
         return None if row is None else {"id":row["id"], "name":row["name"], "activeMembers":row["total"]}
+
+class ReusedRequest(Exception):
+    pass
+
+def save_retirement(document, request_id, retirement_date, reason, author):
+    with connection() as db:
+        db.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",(request_id,))
+        old = db.execute("SELECT * FROM retirement_receipts WHERE request_id=%s",(request_id,)).fetchone()
+        if old:
+            if (old["document"],old["retirement_date"],old["reason"]) != (document,retirement_date,reason):
+                raise ReusedRequest()
+            return False, old["movement"]
+        table, column, _ = layout(db)
+        row = db.execute(sql.SQL("SELECT 1 FROM {} WHERE {}=%s FOR UPDATE").format(sql.Identifier(table),sql.Identifier(column)),(document,)).fetchone()
+        if not row:
+            return None
+        movement=db.execute("SELECT sp_registrar_retiro(%s,%s,%s,%s) AS movement",(document,retirement_date,reason,author.upper())).fetchone()["movement"]
+        db.execute("INSERT INTO retirement_receipts VALUES (%s,%s,%s,%s,%s)",(request_id,document,retirement_date,reason,movement))
+        return True,movement
