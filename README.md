@@ -1,8 +1,10 @@
-# Legacy Escape — reconstrucción del nivel tecnólogo
+# Legacy Escape — nivel tecnólogo
 
 ## Descripción
 
-La solución permite modernizar Afiliaciones y Retiros de una caja de compensación sin sustituir de golpe su sistema antiguo. Un gateway expone datos canónicos y escrituras idempotentes. Los retiros aceptados durante caídas se guardan de forma persistente y se recuperan cuando vuelve la base. La reconstrucción y sus commits se describen en docs/procedencia.md.
+La solución moderniza Afiliaciones y Retiros de una caja de compensación mediante una API estable, sin sustituir de golpe su sistema antiguo. Portal, Subsidios y un consumidor móvil consultan o escriben por HTTP; Educación conserva su funcionamiento. Los retiros usan comprobantes transaccionales para reconocer reintentos y una cola persistente para recuperarse después de caídas.
+
+Repositorio: [juaness1282/hackaton-fesc](https://github.com/juaness1282/hackaton-fesc). La procedencia de la reconstrucción está documentada en [docs/procedencia.md](docs/procedencia.md).
 
 ## Integrantes
 
@@ -10,56 +12,166 @@ La solución permite modernizar Afiliaciones y Retiros de una caja de compensaci
 
 ## Requisitos
 
-Docker con motor Linux y Docker Compose. Python 3.8 o superior para los validadores. Bash para los scripts, también mediante Git Bash en Windows. El gateway usa Python 3.12 dentro de su imagen.
+- Docker con motor Linux y Docker Compose.
+- Git para descargar el repositorio.
+- Bash para los scripts y ejemplos, incluido Git Bash en Windows.
+- curl para las consultas de ejemplo.
+- Python 3.8 o superior en el host para los validadores y scripts de eventos. El gateway y las pruebas de integración usan Python 3.12 dentro de contenedores.
+- Puertos 8082, 8090, 8091, 8092 y 8093 disponibles.
 
 ## Instalación y ejecución
 
-Desde una copia limpia ejecutar cp .env.example .env y cambiar la contraseña y los tres tokens por valores propios. Después ejecutar docker compose up -d --build. Esperar hasta que GET /health indique legacy UP. La primera inicialización carga el esquema, datos sintéticos y comprobantes automáticamente.
+Desde una carpeta de trabajo, ejecutar:
 
-Para revertir ejecutar ./rollback.sh affiliations. No borrar volúmenes: son la fuente de datos y la cola. Para reanudar DUAL ejecutar docker compose run --rm --no-deps gateway python migration.py DUAL. reset.sh es destructivo y solo sirve para restablecer el kit de pruebas.
+```bash
+git clone https://github.com/juaness1282/hackaton-fesc.git
+cd hackaton-fesc
+cp .env.example .env
+```
+
+Editar .env antes del arranque: sustituir POSTGRES_PASSWORD y los tres tokens por valores propios y distintos. Mantener el archivo fuera de Git. Los demás valores del ejemplo permiten la comunicación entre contenedores.
+
+```bash
+docker compose up -d --build
+docker compose ps
+curl http://localhost:8082/health
+```
+
+La salud debe responder con status UP y legacy UP. Si la base aún está inicializándose, esperar y repetir la consulta. En un volumen nuevo se instalan automáticamente esquema, datos sintéticos, procedimiento y tabla de comprobantes.
+
+Si se reutiliza un volumen creado con una versión del kit que no incluía comprobantes, aplicar la migración aditiva antes de registrar retiros:
+
+```bash
+docker compose exec -T legacy-db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < db/init/04_receipts.sql
+```
+
+Para detener y volver a iniciar conservando datos:
+
+```bash
+docker compose stop
+docker compose up -d
+```
+
+Para revertir Afiliaciones:
+
+```bash
+./rollback.sh affiliations
+```
+
+El rollback mantiene datos y solicitudes pendientes. Para volver a DUAL:
+
+```bash
+docker compose run --rm --no-deps gateway python migration.py DUAL
+```
+
+reset.sh y docker compose down -v borran volúmenes; no forman parte de la reversión de un dominio.
 
 ## Configuración
 
-| Variable | Propósito | Ejemplo |
+| Variable de .env.example | Propósito | Ejemplo |
 |---|---|---|
-| POSTGRES_DB | Nombre de base | legacy |
-| POSTGRES_USER | Usuario de base | legacy |
-| POSTGRES_PASSWORD | Contraseña de base leída del entorno | cambiar-esta-clave |
-| LEGACY_DB_HOST | Nombre del servicio de base | legacy-db |
+| POSTGRES_DB | Base de datos utilizada por las aplicaciones | legacy |
+| POSTGRES_USER | Usuario de PostgreSQL | legacy |
+| POSTGRES_PASSWORD | Contraseña de PostgreSQL leída del entorno | cambiar-esta-clave |
+| LEGACY_DB_HOST | Nombre interno del servicio de base | legacy-db |
 | LEGACY_DB_PORT | Puerto interno de PostgreSQL | 5432 |
-| GATEWAY_URL | URL interna del gateway | http://gateway:8082 |
+| GATEWAY_URL | URL interna utilizada por los consumidores HTTP | http://gateway:8082 |
 | PORTAL_TOKEN | Credencial de Portal | cambiar-portal |
 | SUBSIDIOS_TOKEN | Credencial de Subsidios | cambiar-subsidios |
-| MOBILE_TOKEN | Credencial móvil de solo lectura | cambiar-mobile |
+| MOBILE_TOKEN | Credencial del consumidor móvil de solo lectura | cambiar-mobile |
 
-STATE_DIR=/state se establece dentro de Compose, no requiere configuración del usuario. SUBSIDIOS_MODE solo actúa si no existe el control persistente; después del rollback manda el archivo domains.json. Los secretos se conservan en .env, excluido de Git.
+Los ejemplos cambiar-... son marcadores, no credenciales de producción. Al modificar .env, recrear los contenedores afectados mediante docker compose up -d.
+
+Compose establece STATE_DIR=/state dentro de gateway. SUBSIDIOS_MODE es opcional y solo actúa si no existe /state/domains.json; ese control persistente tiene prioridad. EDUCACION_PORT, PORTAL_PORT y SUBSIDIOS_PORT permiten cambiar los puertos publicados de esos consumidores; sus valores predeterminados son 8090, 8092 y 8091. El contrato del gateway conserva el puerto 8082.
 
 ## Arquitectura
 
-legacy-db conserva datos y procedimientos. educacion-app permanece sin cambios y lee la base. portal-client consume HTTP. subsidios-app utiliza gateway en DUAL y el procedimiento original en LEGACY. mobile-client ofrece consultas en una web adaptable a teléfonos sin exponer tokens al navegador. gateway reúne adapter, autenticación, auditoría y cola. tests comprueba la integración en su perfil independiente.
+| Servicio de Compose | Responsabilidad |
+|---|---|
+| legacy-db | Conserva la fuente de datos y los procedimientos originales en PostgreSQL |
+| educacion-app | Consulta directamente como antes; código del kit sin modificaciones |
+| portal-client | Construye la ficha mediante HTTP al gateway; código del kit sin modificaciones |
+| subsidios-app | Registra por gateway en DUAL/MODERN y por el camino original en LEGACY |
+| gateway | Expone el contrato, autentica, audita, adapta datos y recupera retiros pendientes |
+| mobile-client | Interfaz web adaptable a teléfonos y proxy de solo lectura; conserva el token en el servidor |
+| tests | Pruebas de integración activadas exclusivamente con el perfil test |
+
+gateway-state conserva la cola SQLite y el estado administrativo; legacy-db-data conserva datos y comprobantes PostgreSQL. El adapter está en src/db_adapter.py. Entre los consumidores nuevos, el móvil solo se comunica por HTTP y no recibe configuración de PostgreSQL.
 
 ## Uso
 
-Gateway: http://localhost:8082. Interfaz móvil: http://localhost:8093. Para datos protegidos usar Authorization: Bearer con el token correspondiente.
+Gateway y documentación interactiva: [localhost:8082/docs](http://localhost:8082/docs).
+Consumidor móvil: [localhost:8093](http://localhost:8093).
+Ejemplo de documento sintético: 1019886173; empresa: 2015.
 
-| Ruta | Ejemplo |
+Los siguientes ejemplos se ejecutan en Bash desde la raíz del repositorio. Cargar las variables del archivo local:
+
+```bash
+set -a
+. ./.env
+set +a
+```
+
+| Ruta requerida | Finalidad |
 |---|---|
-| GET /health | Consultar disponibilidad sin token |
-| GET /api/v1/members/{document} | Documento 1019886173 |
-| GET /api/v1/members/{document}/beneficiaries | Beneficiarios de 1019886173 |
-| GET /api/v1/companies/{id} | Empresa 2015 |
-| POST /api/v1/members/{document}/retirements | Cuerpo mostrado debajo |
-| GET /api/v1/migration/status | Estado por dominio |
+| GET /health | Disponibilidad del gateway y del legacy; sin autenticación obligatoria |
+| GET /api/v1/members/{document} | Documento, nombre completo, estado y empresa |
+| GET /api/v1/members/{document}/beneficiaries | Beneficiarios y parentescos |
+| GET /api/v1/companies/{id} | Empresa y cantidad de afiliados activos |
+| POST /api/v1/members/{document}/retirements | Retiro identificado por requestId |
+| GET /api/v1/migration/status | Estado de los dominios |
 
-Ejemplo de retiro: {"requestId":"mi-retiro-1","date":"2026-10-14","reason":"Retiro voluntario"}. Primera confirmación: 201; repetición: 200; identificador con otros datos: 409. Con la base caída, una solicitud persistida responde 202. GET /api/v1/retirement-requests/{request_id} devuelve pending, completed, not_found o conflict.
+```bash
+curl http://localhost:8082/health
+curl -H "Authorization: Bearer $PORTAL_TOKEN" http://localhost:8082/api/v1/members/1019886173
+curl -H "Authorization: Bearer $PORTAL_TOKEN" http://localhost:8082/api/v1/members/1019886173/beneficiaries
+curl -H "Authorization: Bearer $PORTAL_TOKEN" http://localhost:8082/api/v1/companies/2015
+curl -H "Authorization: Bearer $PORTAL_TOKEN" http://localhost:8082/api/v1/migration/status
+curl -X POST -H "Authorization: Bearer $SUBSIDIOS_TOKEN" -H "Content-Type: application/json" -d '{"requestId":"demo-retiro-1","date":"2026-10-15","reason":"Retiro de demostración"}' http://localhost:8082/api/v1/members/1019886173/retirements
+```
 
-Subsidios conserva POST :8091/retiros con documento, fecha y motivo. Se puede incluir requestId o Idempotency-Key para reutilizarlo en reintentos. Sin identificador suministrado, cada petición se considera nueva. Las consultas dependientes de una base no disponible responden 503 con LEGACY_UNAVAILABLE en menos de tres segundos.
+Un retiro confirmado inicialmente devuelve 201, movement y status completed. Repetir el mismo contenido y requestId devuelve 200; reutilizarlo con otros datos devuelve 409. MOBILE_TOKEN permite consultas y recibe 403 al intentar un retiro.
+
+Si PostgreSQL está caído, las consultas que dependen de él devuelven 503 con LEGACY_UNAVAILABLE en menos de tres segundos. Un retiro persistido puede responder 202 con status pending y movement null. Consultar el resultado posterior:
+
+```bash
+curl -H "Authorization: Bearer $SUBSIDIOS_TOKEN" http://localhost:8082/api/v1/retirement-requests/demo-retiro-1
+```
+
+La solicitud termina en completed, not_found o conflict según su aplicación al recuperar el legacy. No cambiar requestId al reintentar una misma operación.
+
+Subsidios conserva POST :8091/retiros con documento, fecha y motivo; permite requestId o Idempotency-Key. Sin identificador suministrado, cada petición se considera nueva:
+
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"documento":"1019886173","fecha":"2026-10-15","motivo":"Retiro desde Subsidios","requestId":"demo-subsidios-1"}' http://localhost:8091/retiros
+```
 
 ## Pruebas
 
-Ejecutar docker compose --profile test run --rm tests con el entorno levantado. El servicio verifica consultas, conteos contra PostgreSQL, permisos, errores, retiros, concurrencia, Subsidios, Educación, Portal y móvil; genera test-results/contract.xml con quince casos. Modifica exclusivamente datos sintéticos del kit.
+Con los servicios en funcionamiento, ejecutar:
 
-El script python3 scripts/verify-events.py ejecuta eventos de esquema, caída y rollback contra Docker desde el host; deja test-results/events.json. Requiere el entorno de pruebas, Bash, Docker y .env. No montar el socket Docker dentro de contenedores.
+```bash
+docker compose --profile test run --rm tests
+```
+
+El servicio genera test-results/contract.xml con quince casos de integración contra PostgreSQL real. Comprueba consultas, activeMembers, permisos, errores, retiros, repetición, concurrencia, Subsidios, Educación, Portal y móvil. Modifica datos sintéticos y termina con error si falla una prueba.
+
+Para los cinco controles de eventos desde el host:
+
+```bash
+python3 scripts/verify-events.py
+```
+
+El script aplica el cambio de esquema, detiene y recupera PostgreSQL, reinicia gateway y comprueba rollback con gateway apagado. Deja test-results/events.json, conserva el esquema renombrado y restaura DUAL al finalizar.
+
+Revisiones públicas del kit, con UTF-8 para incluir el proceso hijo del revisor en Windows:
+
+```bash
+PYTHONUTF8=1 PYTHONIOENCODING=utf-8 python3 validator check
+PYTHONUTF8=1 PYTHONIOENCODING=utf-8 python3 validator entregables
+```
+
+Si la instalación del host proporciona python en lugar de python3, usar ese ejecutable. No se necesitan dependencias Python del gateway en el host para estas revisiones. Las fechas y resultados ejecutados están en docs/verification.md.
 
 ## Documentación
 
@@ -70,11 +182,17 @@ El script python3 scripts/verify-events.py ejecuta eventos de esquema, caída y 
 - [Uso de IA](AI_USAGE.md)
 - [Procedencia](docs/procedencia.md)
 - [Verificación](docs/verification.md)
+- [Auditoría de requisitos](docs/auditoria-requisitos.md)
+- [Guion y entrega del pitch](docs/pitch.md)
 
 ## Qué resolvimos
 
-Se construyó un gateway nuevo desde el kit original, encapsulando las consultas y el procedimiento en un adapter. Se añadió autenticación por consumidor y auditoría enmascarada. Subsidios usa HTTP y los retiros incluyen comprobantes transaccionales. La cola independiente de PostgreSQL permite recuperación después de reinicios; el modo administrativo permite volver al camino original.
+Se construyó una API con modelo canónico y acceso al esquema encapsulado en el adapter. Subsidios registra por HTTP y los retiros incluyen comprobantes transaccionales para reconocer reintentos. La cola persistente independiente del legacy conserva solicitudes durante caídas y reinicios. El rollback mantiene el procedimiento original disponible y el móvil consume las consultas existentes. Pasaron quince pruebas de integración, los cinco controles de eventos y un arranque con volúmenes vacíos.
 
 ## Limitaciones y pendientes
 
-El móvil es una web adaptable, no un paquete nativo Android o iOS. No se dispone de pruebas ocultas del comité. No se hicieron pruebas de carga ni se afirma alta disponibilidad. La operación en LEGACY conserva las limitaciones originales del procedimiento. Faltan revisión humana del código, registro del repositorio y pitch del evento.
+Quedan dos ajustes de implementación descritos en docs/auditoria-requisitos.md: consumer unknown en algunas líneas de auditoría y formato estándar en errores de rutas inexistentes. Esta revisión documental no los presenta como corregidos.
+
+El móvil es una web adaptable; la persistencia local no ofrece alta disponibilidad. En LEGACY, el procedimiento original conserva su falta de idempotencia. Las pruebas de carga no forman parte de esta entrega.
+
+El repositorio está publicado. El registro en Mi equipo, el enlace público del pitch y la revisión humana del código y de AI_USAGE siguen pendientes de confirmación. La sección de integrantes contiene únicamente los datos proporcionados.

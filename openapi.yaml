@@ -2,12 +2,13 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Legacy Escape",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "description": "API v1 de transición de Afiliaciones. Consultas canónicas, retiros idempotentes y seguimiento de solicitudes persistidas durante caídas. El consumidor móvil solo tiene permisos de lectura."
   },
   "paths": {
     "/health": {
       "get": {
-        "summary": "Health",
+        "summary": "Consultar salud",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -16,76 +17,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "status": "UP",
+                  "legacy": "UP"
                 }
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
+          "500": {
+            "description": "Error interno",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable Entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service Unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Error interno",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Salud"
+        ],
+        "description": "Devuelve 200 mientras el gateway responde. legacy informa UP o DOWN independientemente de status. No requiere token."
       }
     },
     "/api/v1/members/{document}": {
       "get": {
-        "summary": "Member",
+        "summary": "Consultar afiliado",
         "operationId": "member_api_v1_members__document__get",
         "security": [
           {
@@ -100,7 +63,9 @@
             "schema": {
               "type": "string",
               "title": "Document"
-            }
+            },
+            "description": "Documento del afiliado; para retiros se valida entre uno y quince dígitos.",
+            "example": "1019886173"
           }
         ],
         "responses": {
@@ -110,76 +75,86 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Member"
+                },
+                "example": {
+                  "document": "1019886173",
+                  "fullName": "MONICA PABON MENDOZA",
+                  "status": "RETIRED",
+                  "company": {
+                    "id": "2015",
+                    "name": "LOGISTICA LA PLAYA SAS"
+                  }
                 }
               }
             }
           },
           "401": {
+            "description": "Token ausente o inválido",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Token requerido o inválido",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
-            },
-            "description": "Unauthorized"
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Forbidden"
+            }
           },
           "404": {
+            "description": "Registro no encontrado",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Registro no encontrado",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
-            },
-            "description": "Not Found"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Conflict"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
+            "description": "Legacy temporalmente no disponible",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Base temporalmente no disponible",
+                  "error_id": "00000000-0000-4000-8000-000000000001",
+                  "code": "LEGACY_UNAVAILABLE"
                 }
               }
-            },
-            "description": "Service Unavailable"
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Error interno",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            }
           }
-        }
+        },
+        "tags": [
+          "Afiliaciones"
+        ],
+        "description": "Respuesta canónica; status puede ser ACTIVE, RETIRED o SUSPENDED."
       }
     },
     "/api/v1/members/{document}/beneficiaries": {
       "get": {
-        "summary": "Beneficiaries",
+        "summary": "Consultar beneficiarios",
         "operationId": "beneficiaries_api_v1_members__document__beneficiaries_get",
         "security": [
           {
@@ -194,7 +169,9 @@
             "schema": {
               "type": "string",
               "title": "Document"
-            }
+            },
+            "description": "Documento del afiliado; para retiros se valida entre uno y quince dígitos.",
+            "example": "1019886173"
           }
         ],
         "responses": {
@@ -208,76 +185,78 @@
                     "$ref": "#/components/schemas/Beneficiary"
                   },
                   "title": "Response Beneficiaries Api V1 Members  Document  Beneficiaries Get"
-                }
+                },
+                "example": []
               }
             }
           },
           "401": {
+            "description": "Token ausente o inválido",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Token requerido o inválido",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
-            },
-            "description": "Unauthorized"
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Forbidden"
+            }
           },
           "404": {
+            "description": "Registro no encontrado",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Registro no encontrado",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
-            },
-            "description": "Not Found"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Conflict"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
+            "description": "Legacy temporalmente no disponible",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Base temporalmente no disponible",
+                  "error_id": "00000000-0000-4000-8000-000000000001",
+                  "code": "LEGACY_UNAVAILABLE"
                 }
               }
-            },
-            "description": "Service Unavailable"
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Error interno",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            }
           }
-        }
+        },
+        "tags": [
+          "Afiliaciones"
+        ],
+        "description": "Devuelve una lista, vacía si el afiliado existe pero no tiene beneficiarios. Un afiliado inexistente produce 404."
       }
     },
     "/api/v1/companies/{id}": {
       "get": {
-        "summary": "Company",
+        "summary": "Consultar empresa",
         "operationId": "company_api_v1_companies__id__get",
         "security": [
           {
@@ -292,7 +271,9 @@
             "schema": {
               "type": "string",
               "title": "Id"
-            }
+            },
+            "description": "Identificador canónico de empresa.",
+            "example": "2015"
           }
         ],
         "responses": {
@@ -302,76 +283,82 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Company"
+                },
+                "example": {
+                  "id": "2015",
+                  "name": "LOGISTICA LA PLAYA SAS",
+                  "activeMembers": 31
                 }
               }
             }
           },
           "401": {
+            "description": "Token ausente o inválido",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Token requerido o inválido",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
-            },
-            "description": "Unauthorized"
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Forbidden"
+            }
           },
           "404": {
+            "description": "Registro no encontrado",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Registro no encontrado",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
-            },
-            "description": "Not Found"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Conflict"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
+            "description": "Legacy temporalmente no disponible",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Base temporalmente no disponible",
+                  "error_id": "00000000-0000-4000-8000-000000000001",
+                  "code": "LEGACY_UNAVAILABLE"
                 }
               }
-            },
-            "description": "Service Unavailable"
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Error interno",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            }
           }
-        }
+        },
+        "tags": [
+          "Empresas"
+        ],
+        "description": "activeMembers cuenta los afiliados con estado activo de la empresa."
       }
     },
     "/api/v1/members/{document}/retirements": {
       "post": {
-        "summary": "Retirement",
+        "summary": "Registrar retiro",
         "operationId": "retirement_api_v1_members__document__retirements_post",
         "security": [
           {
@@ -386,7 +373,9 @@
             "schema": {
               "type": "string",
               "title": "Document"
-            }
+            },
+            "description": "Documento del afiliado; para retiros se valida entre uno y quince dígitos.",
+            "example": "1019886173"
           }
         ],
         "requestBody": {
@@ -395,107 +384,155 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RetirementInput"
+              },
+              "example": {
+                "requestId": "demo-retiro-1",
+                "date": "2026-10-15",
+                "reason": "Retiro de demostración"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Retiro confirmado y comprobante registrado",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Receipt"
+                },
+                "example": {
+                  "requestId": "demo-retiro-1",
+                  "movement": 42,
+                  "status": "completed"
                 }
               }
             }
           },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unauthorized"
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Forbidden"
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Not Found"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Conflict"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unprocessable Entity"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Service Unavailable"
-          },
           "200": {
-            "description": "Repetición confirmada",
+            "description": "Solicitud repetida ya confirmada, sin duplicar el movimiento",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Receipt"
+                },
+                "example": {
+                  "requestId": "demo-retiro-1",
+                  "movement": 42,
+                  "status": "completed"
                 }
               }
             }
           },
           "202": {
-            "description": "Persistido y pendiente de recuperación",
+            "description": "Solicitud persistida en cola, pendiente de aplicar",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Receipt"
+                },
+                "example": {
+                  "requestId": "demo-retiro-1",
+                  "movement": null,
+                  "status": "pending"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Token requerido o inválido",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El consumidor móvil no puede escribir",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Este consumidor es de solo lectura",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Registro no encontrado",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "requestId reutilizado con otro documento, fecha o motivo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "requestId pertenece a otra solicitud",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Documento o cuerpo inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Datos de solicitud inválidos",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Error interno",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Retiros"
+        ],
+        "description": "Reutilizar requestId y el mismo contenido para reintentar. Primera confirmación 201; repetición confirmada 200; solicitud persistida pendiente 202. La persistencia local precede al intento de escritura. Consultar el seguimiento para conocer el resultado de un 202."
       }
     },
     "/api/v1/retirement-requests/{request_id}": {
       "get": {
-        "summary": "Request Status",
+        "summary": "Consultar una solicitud",
         "operationId": "request_status_api_v1_retirement_requests__request_id__get",
         "security": [
           {
@@ -510,7 +547,9 @@
             "schema": {
               "type": "string",
               "title": "Request Id"
-            }
+            },
+            "description": "Identificador usado al aceptar el retiro.",
+            "example": "demo-retiro-1"
           }
         ],
         "responses": {
@@ -520,76 +559,96 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Receipt"
+                },
+                "examples": {
+                  "pending": {
+                    "summary": "pending",
+                    "value": {
+                      "requestId": "demo-retiro-1",
+                      "movement": null,
+                      "status": "pending"
+                    }
+                  },
+                  "completed": {
+                    "summary": "completed",
+                    "value": {
+                      "requestId": "demo-retiro-1",
+                      "movement": 42,
+                      "status": "completed"
+                    }
+                  },
+                  "not_found": {
+                    "summary": "not_found",
+                    "value": {
+                      "requestId": "demo-retiro-1",
+                      "movement": null,
+                      "status": "not_found"
+                    }
+                  },
+                  "conflict": {
+                    "summary": "conflict",
+                    "value": {
+                      "requestId": "demo-retiro-1",
+                      "movement": null,
+                      "status": "conflict"
+                    }
+                  }
                 }
               }
             }
           },
           "401": {
+            "description": "Token ausente o inválido",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Token requerido o inválido",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
-            },
-            "description": "Unauthorized"
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Forbidden"
+            }
           },
           "404": {
+            "description": "Registro no encontrado",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Registro no encontrado",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
-            },
-            "description": "Not Found"
+            }
           },
-          "409": {
+          "500": {
+            "description": "Error interno",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Error interno",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
-            },
-            "description": "Conflict"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unprocessable Entity"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Service Unavailable"
+            }
           }
-        }
+        },
+        "tags": [
+          "Retiros"
+        ],
+        "description": "Respuesta 200 con estado pending, completed, not_found o conflict. El identificador de solicitud puede existir aunque su aplicación termine not_found; 404 indica que la solicitud no existe en la cola local."
       }
     },
     "/api/v1/migration/status": {
       "get": {
-        "summary": "Migration Status",
+        "summary": "Consultar migración",
         "operationId": "migration_status_api_v1_migration_status_get",
         "responses": {
           "200": {
@@ -598,66 +657,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Migration"
+                },
+                "example": {
+                  "domains": {
+                    "affiliations": "DUAL",
+                    "retirements": "DUAL",
+                    "companies": "LEGACY"
+                  }
                 }
               }
             }
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "Token ausente o inválido",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Token requerido o inválido",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
+          "500": {
+            "description": "Error interno",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable Entity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service Unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Error interno",
+                  "error_id": "00000000-0000-4000-8000-000000000001"
                 }
               }
             }
@@ -667,7 +701,11 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "tags": [
+          "Migración"
+        ],
+        "description": "Solo consulta. Afiliaciones y Retiros se administran conjuntamente mediante comandos locales; no hay endpoint de promoción o rollback."
       }
     }
   },
@@ -752,7 +790,8 @@
           "message",
           "error_id"
         ],
-        "title": "Error"
+        "title": "Error",
+        "description": "Formato de errores de aplicación del gateway. Las rutas desconocidas y algunos errores del router tienen pendiente la unificación descrita en la auditoría."
       },
       "Health": {
         "properties": {
@@ -896,7 +935,8 @@
           "movement",
           "status"
         ],
-        "title": "Receipt"
+        "title": "Receipt",
+        "description": "Estado de una solicitud persistente. movement solo está disponible al quedar completed."
       },
       "RetirementInput": {
         "properties": {
@@ -931,8 +971,37 @@
     "securitySchemes": {
       "HTTPBearer": {
         "type": "http",
-        "scheme": "bearer"
+        "scheme": "bearer",
+        "description": "Un token por consumidor: PORTAL_TOKEN, SUBSIDIOS_TOKEN o MOBILE_TOKEN. Se configuran en el entorno; nunca se documentan sus valores reales. MOBILE_TOKEN no puede registrar retiros."
       }
     }
-  }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8082",
+      "description": "Gateway publicado por Docker Compose"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Salud",
+      "description": "Disponibilidad del gateway y de PostgreSQL"
+    },
+    {
+      "name": "Afiliaciones",
+      "description": "Consulta de afiliados y beneficiarios"
+    },
+    {
+      "name": "Empresas",
+      "description": "Datos y conteos activos"
+    },
+    {
+      "name": "Retiros",
+      "description": "Escritura idempotente y seguimiento"
+    },
+    {
+      "name": "Migración",
+      "description": "Consulta de estados administrados localmente"
+    }
+  ]
 }

@@ -2,7 +2,7 @@
 
 ## Alcance y procedencia
 
-La reconstrucción fue solicitada por Juan Esteban Mantilla Vega y ejecutada con asistencia de Codex en una carpeta nueva, partiendo del kit original. Existía una solución previa en otra carpeta; su código y su historial no se importaron. Los diez commits asociados registran los bloques de esta reconstrucción con sus fechas reales.
+La reconstrucción fue solicitada por Juan Esteban Mantilla Vega y ejecutada con asistencia de Codex en una carpeta nueva, partiendo del kit original. Existía una solución previa en otra carpeta; su código y su historial no se importaron. Los diez commits técnicos iniciales registran los bloques de esta reconstrucción con sus fechas reales. Las revisiones documentales posteriores se identifican en los usos 11 y 12.
 
 **Los prompts de este documento son resúmenes ampliados y reconstruidos a posteriori del encargo, las decisiones y las acciones observadas en esta conversación. No son transcripciones literales ni diez mensajes independientes que el participante haya enviado al asistente.** Se separan por commit para facilitar la trazabilidad técnica.
 
@@ -98,6 +98,24 @@ Se mantienen los cinco campos exigidos por el reglamento. En «Qué modificó o 
 - Commit relacionado: `d9d9291` — Documenta el contrato y verifica integración eventos y arranque limpio.
 - Comprobación realizada: Pasaron quince pruebas de integración y otros quince casos al ejecutarlas sobre volúmenes vacíos. El script aprobó cinco controles de eventos. Las nueve comprobaciones públicas pasaron; los casos ocultos oficiales no se ejecutaron.
 
+## Uso 11
+- Herramienta: Codex, asistente de OpenAI utilizado en esta conversación.
+- Para qué se usó: ampliar la trazabilidad del uso de IA y registrar los hallazgos de la auditoría antes de publicar el proyecto.
+- Prompt principal (resumido): Resumen reconstruido: ampliar AI_USAGE con un uso por cada commit técnico, explicando propósito, prompt, resultado y correcciones reales. Identificar los resúmenes reconstruidos como tales y conservar los resultados verificables. Incorporar la auditoría, revisar credenciales antes de versionar y publicar el proyecto en el repositorio proporcionado.
+- Qué produjo: diez usos detallados, la auditoría de requisitos, reportes actualizados y publicación de main en GitHub.
+- Qué modificó o corrigió el equipo: El asistente mantuvo explícita la procedencia reconstruida de los prompts, eliminó una línea vacía sobrante al final del archivo y comprobó que las credenciales reales no entraran en el commit. La revisión humana sigue pendiente.
+- Commit relacionado: `d8794e9` — Detalla el uso de IA y documenta la auditoría de requisitos.
+- Comprobación realizada: la rama remota y HEAD local coincidieron después de subir once commits. El archivo .env permaneció excluido y se inspeccionaron los archivos pendientes antes de publicar.
+
+## Uso 12
+- Herramienta: Codex, asistente de OpenAI utilizado en esta conversación.
+- Para qué se usó: revisar en orden README, arquitectura, migración, dependencias, OpenAPI, uso de IA y material del pitch.
+- Prompt principal (resumido): Resumen reconstruido: contrastar los siete puntos documentales con el código y los resultados ejecutados. Separar las fechas de pruebas y de edición, comprobar nuevamente Docker, describir los pendientes técnicos y aclarar que el guion y el enlace del pitch no son archivos obligatorios del repositorio. Preparar al final un único commit documental, conservando las autorías y fechas reales.
+- Qué produjo: comandos y ejemplos de ejecución en README, explicación ampliada de transacciones y rollback, criterios de promoción diferenciados de resultados, OpenAPI con ejemplos y una guía opcional para el video. Se actualizaron auditoría y verificación con el estado comprobado el 15 de octubre.
+- Qué modificó o corrigió el equipo: El asistente retiró referencias desactualizadas a GitHub vacío, diferenció servicios observados de monitoreo continuo y mantuvo visibles los dos defectos de código. También distinguió las tareas reales del video de la revisión del guion y comprobó enlaces y coherencia documental.
+- Commit relacionado: revisión final titulada «Revisa la documentación y completa ejemplos del contrato». Su identificador queda registrado por Git al crear el commit; puede consultarse con git log --oneline -- AI_USAGE.md.
+- Comprobación realizada: el 15 de octubre se levantaron los seis servicios y pasaron quince pruebas de integración y nueve comprobaciones públicas. Los eventos y el arranque con volúmenes vacíos conservan la fecha de su ejecución anterior. La validación documental y de OpenAPI se realiza al cerrar esta revisión.
+
 ## Estado de revisión y límites
 
-La auditoría posterior está en [docs/auditoria-requisitos.md](docs/auditoria-requisitos.md): identifica el uso de consumer unknown y los errores estándar de rutas inexistentes como ajustes pendientes. Haber aprobado pruebas propias y el validador público no equivale a aprobar los casos ocultos ni a tener lista la entrega en la plataforma.
+La auditoría posterior está en [docs/auditoria-requisitos.md](docs/auditoria-requisitos.md): identifica el uso de consumer unknown y los errores estándar de rutas inexistentes como ajustes pendientes. Las verificaciones ejecutadas y sus fechas están en docs/verification.md. Los ajustes técnicos permanecen abiertos; el enlace del video y el registro en Mi equipo no se han proporcionado. El participante todavía debe revisar el contenido y poder explicar, ejecutar, depurar y modificar la solución.
