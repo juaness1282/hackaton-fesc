@@ -1,0 +1,11 @@
+{
+  "passed": [
+    "Contrato idéntico después de cambiar esquema",
+    "Consultas con base caída responden 503 en menos de tres segundos",
+    "Retiro aceptado sobrevive al reinicio del gateway",
+    "Recuperación con exactamente un movimiento",
+    "Rollback persistente y Subsidios operativo con gateway apagado"
+  ],
+  "status": "passed",
+  "seconds": 26.7
+}

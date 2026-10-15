@@ -65,14 +65,12 @@ services:
     ports:
       - "8093:8093"
 
-  # Configuración inicial del gateway.
-  # gateway:
-  #   build: ./src
-  #   env_file: .env
-  #   ports:
-  #     - "8082:8082"
-  #   volumes:
-  #     - ./logs:/app/logs
+  tests:
+    build: ./tests
+    profiles: ["test"]
+    env_file: .env
+    volumes:
+      - ./test-results:/results
 
 volumes:
   gateway-state:
