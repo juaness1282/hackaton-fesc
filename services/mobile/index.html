@@ -1,0 +1,32 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Consulta de afiliación</title><style>
+body{margin:0;background:#eef4f6;color:#16303d;font:17px system-ui}main{max-width:520px;margin:auto;padding:32px 20px}
+h1{font-size:34px}input,button{font:inherit;padding:14px;border-radius:10px;box-sizing:border-box;width:100%;margin:10px 0}
+input{border:1px solid #aac1cb}button{background:#00675b;color:white;border:0}article{background:white;padding:22px;border-radius:16px;margin:18px 0}
+label{display:block}small{color:#486371}li{margin:10px 0}#message{color:#983124}
+</style><main><small>Legacy Escape · Solo lectura</small><h1>Consulta tu afiliación</h1>
+<form id="form"><label for="document">Documento</label><input id="document" inputmode="numeric" pattern="[0-9]{1,15}" required maxlength="15" autocomplete="off">
+<button id="submit">Consultar</button></form><p id="message" role="status" aria-live="polite"></p>
+<section id="results" hidden><article><h2 id="name"></h2><p id="status"></p><p id="company"></p></article>
+<article><h2>Beneficiarios</h2><ul id="people"></ul></article></section></main>
+<script>
+const byId=id=>document.getElementById(id);
+byId('form').addEventListener('submit',async event=>{
+ event.preventDefault();byId('submit').disabled=true;byId('results').hidden=true;byId('message').textContent='Consultando…';
+ try{
+  const id=byId('document').value;
+  const responses=await Promise.all([fetch('/members/'+id),fetch('/members/'+id+'/beneficiaries')]);
+  const [member,benefits]=await Promise.all(responses.map(r=>r.json()));
+  if(!responses[0].ok)throw Error(member.message||'No fue posible consultar');
+  if(!responses[1].ok)throw Error(benefits.message||'No fue posible consultar beneficiarios');
+  byId('name').textContent=member.fullName;
+  byId('status').textContent=({ACTIVE:'Activo',RETIRED:'Retirado',SUSPENDED:'Suspendido'})[member.status];
+  byId('company').textContent=member.company.name;
+  byId('people').replaceChildren();
+  for(const person of benefits){const item=document.createElement('li');item.textContent=person.fullName+' · '+({SPOUSE:'Cónyuge',CHILD:'Hijo/a',FATHER:'Padre',MOTHER:'Madre'})[person.relationship];byId('people').append(item);}
+  if(!benefits.length){const item=document.createElement('li');item.textContent='Sin beneficiarios registrados';byId('people').append(item);}
+  byId('results').hidden=false;byId('message').textContent='';
+ }catch(error){byId('message').textContent=error.message;}
+ finally{byId('submit').disabled=false;}
+});
+</script></html>

@@ -37,6 +37,8 @@ services:
   subsidios-app:
     build: ./services/subsidios
     env_file: .env
+    volumes:
+      - gateway-state:/state:ro
     ports:
       - "${SUBSIDIOS_PORT:-8091}:8091"
     depends_on:
@@ -53,6 +55,15 @@ services:
     volumes:
       - ./logs:/app/logs
       - gateway-state:/state
+      - ./docs:/app/docs
+
+  mobile-client:
+    build: ./services/mobile
+    environment:
+      GATEWAY_URL: ${GATEWAY_URL:-http://gateway:8082}
+      MOBILE_TOKEN: ${MOBILE_TOKEN}
+    ports:
+      - "8093:8093"
 
   # Configuración inicial del gateway.
   # gateway:

@@ -12,6 +12,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import psycopg2
 import gateway_client
+from pathlib import Path
+
+def is_legacy():
+    path=Path("/state/domains.json")
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))["affiliations"]=="LEGACY"
+    return os.getenv("SUBSIDIOS_MODE","gateway")=="legacy"
+
 
 
 def connect():
@@ -48,7 +56,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/health":
-            return self._send(200, {"status": "UP", "modo": os.getenv("SUBSIDIOS_MODE", "gateway")})
+            return self._send(200, {"status": "UP", "modo": "legacy" if is_legacy() else "gateway"})
         return self._send(404, {"error": "ruta no encontrada"})
 
     def do_POST(self):
@@ -61,7 +69,7 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.rfile.read(length) or b"{}")
             if not isinstance(data, dict):
                 raise ValueError()
-            if os.getenv("SUBSIDIOS_MODE", "gateway") != "legacy":
+            if not is_legacy():
                 status, payload = gateway_client.send(data, self.headers.get("Idempotency-Key"))
                 return self._send(status, payload)
             movimiento = registrar_retiro(data["documento"], data["fecha"], data.get("motivo", "RETIRO"))

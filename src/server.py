@@ -76,3 +76,9 @@ def retirement(document: str, body: RetirementInput, author: str=Depends(consume
 def request_status(request_id: str):
     job=found(inbox.load(request_id))
     return {"requestId":request_id,"status":job["state"],"movement":job["movement"]}
+
+import migration
+
+@api.get("/api/v1/migration/status",dependencies=[Depends(consumer)])
+def migration_status():
+    return {"domains":migration.current()}
