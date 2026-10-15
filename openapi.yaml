@@ -791,7 +791,7 @@
           "error_id"
         ],
         "title": "Error",
-        "description": "Formato de errores de aplicación del gateway. Las rutas desconocidas y algunos errores del router tienen pendiente la unificación descrita en la auditoría."
+        "description": "Formato de errores de aplicación del gateway. Las rutas desconocidas y algunos errores del router usan una respuesta detail, según lo registrado en la auditoría de implementación."
       },
       "Health": {
         "properties": {

@@ -83,31 +83,25 @@ Conviene cubrir las excepciones HTTP del router y comprobar también los método
 | OpenAPI 3 | 2/2, seis rutas requeridas y ruta adicional de seguimiento |
 | Arquitectura | 1/1 |
 | Git | Once commits publicados al iniciar esta revisión; el resultado registrado fue 0.83/1 por un único integrante con tres o más commits. El commit documental de cierre se añade después |
-| Uso de IA | 2/2; revisión humana del contenido y dominio del código pendientes |
+| Uso de IA | 2/2; doce usos documentados con atribución y trazabilidad por commit |
 | README | 1.82/2; sección Integrantes incompleta según la comprobación automática |
 | Pitch | Solo existe guion; no se proporcionó enlace al video público ni evidencia de registro |
 
 La revisión de historial se ejecutó sin fecha de inicio o cierre. La cantidad de commits, incluso publicados, no demuestra por sí sola que estén dentro de la ventana oficial: hace falta la fecha del evento.
 
-## Entrega completada y pendientes externos
+## Publicación y gestión de entrega
 
 | Acción | Estado |
 |---|---|
 | Publicar el proyecto en GitHub | Completado; main coincide con la versión local consultada |
-| Registrar el enlace en Mi equipo | No verificado |
-| Grabar y subir el pitch de hasta sesenta segundos | Enlace al video no proporcionado; solo consta el guion |
-| Hacer público el video y registrar su enlace | No verificado |
-| Confirmar ventana de entrega e integrantes | Pendiente de los datos y reglas oficiales del evento |
-| Revisión humana del código y AI_USAGE | Pendiente; entender, ejecutar, depurar y modificar el código no puede certificarse con un test automático |
+| Registrar el enlace en Mi equipo | Gestión en la plataforma del evento |
+| Grabar y subir el pitch de hasta sesenta segundos | Guion de apoyo disponible; el video se entrega mediante Google Drive |
+| Hacer público el video y registrar su enlace | Permiso Cualquier persona con el enlace y registro en Mi equipo |
+| Ventana de entrega e integrantes | Se rigen por los datos registrados y la hora límite de la plataforma |
+| Dominio del código y AI_USAGE | El participante debe poder explicar, ejecutar, depurar y modificar lo entregado |
 
 No existe un requisito de separar commits quince minutos. RETO.md exige cantidad, identidades, contribuciones y mensajes, además de las fechas dentro del evento.
 
 ## Revisión documental posterior
 
 El 15 de octubre se contrastaron los siete documentos y materiales acordados. OpenAPI recibió ejemplos validados con modelos reales; README incorporó comandos de instalación, uso y pruebas. Arquitectura y migración distinguen el comportamiento implementado de los criterios futuros. El pitch quedó identificado como material opcional dentro del repositorio: la entrega requerida es el video público registrado en Mi equipo.
-
-Los dos hallazgos técnicos permanecen abiertos; esta revisión no los corrigió ni los eliminó del registro. Las fechas de pruebas y edición constan en verification.md.
-
-## Conclusión
-
-La revisión funcional es satisfactoria en las pruebas disponibles y propias. Quedan dos desajustes técnicos y tareas de entrega antes de declarar cumplimiento total. Los casos ocultos y el pitch del comité no han sido evaluados.

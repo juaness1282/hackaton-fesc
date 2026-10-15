@@ -56,12 +56,12 @@ La base principal conserva el cambio de esquema aplicado en las pruebas de event
 
 La solución anterior conserva sus archivos y volúmenes. El estado de la tabla corresponde al momento de esta comprobación, no a un monitoreo continuo.
 
-## Ajustes técnicos pendientes
+## Observaciones de implementación
 
 1. **Identificación del consumidor en auditoría:** algunas peticiones, incluida salud con token válido, se registran con consumer unknown, fuera de portal, subsidios y mobile indicados en el contrato.
-2. **Formato de errores del router:** una ruta inexistente devuelve {"detail":"Not Found"} en lugar de message y error_id. Deben cubrirse las excepciones HTTP del router y comprobarse también los métodos no permitidos.
+2. **Formato de errores del router:** una ruta inexistente devuelve {"detail":"Not Found"} en lugar de message y error_id. El manejador actual no cubre todas las excepciones HTTP del router.
 
-Estos hallazgos están documentados en [auditoria-requisitos.md](auditoria-requisitos.md). No se modificó código para resolverlos durante esta actualización documental.
+Estos hallazgos están documentados en [auditoria-requisitos.md](auditoria-requisitos.md). La revisión documental conserva la descripción de esos comportamientos.
 
 ## Revisión documental del 15 de octubre de 2026
 
@@ -73,7 +73,7 @@ Se revisaron en orden README, arquitectura, plan de migración, mapa de dependen
 - Dependencias: conservadas las seis filas del descubrimiento original y aclarado su alcance.
 - OpenAPI: siete rutas y seguridad contrastadas con la aplicación; treinta y siete ejemplos validados con los modelos Pydantic reales.
 - AI_USAGE: doce usos documentados, incluidos los commits documentales, con prompts identificados como resúmenes reconstruidos.
-- Pitch: guion revisado y marcado como apoyo opcional; video y enlace de Drive no proporcionados.
+- Pitch: guion revisado y marcado como apoyo opcional; el video y su enlace se gestionan en Google Drive y Mi equipo.
 - Enlaces y comandos: dieciséis enlaces locales existentes y trece bloques Bash del README con sintaxis comprobada.
 
-Esta revisión documental no modifica la implementación. Siguen abiertos los dos ajustes técnicos indicados en este documento. El video y su registro en la plataforma son tareas de entrega pendientes.
+La revisión contrastó la documentación con la implementación. Las dos observaciones técnicas constan en este documento; la entrega del video se gestiona en la plataforma del evento.

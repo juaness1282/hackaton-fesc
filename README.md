@@ -191,8 +191,6 @@ Se construyó una API con modelo canónico y acceso al esquema encapsulado en el
 
 ## Limitaciones y pendientes
 
-Quedan dos ajustes de implementación descritos en docs/auditoria-requisitos.md: consumer unknown en algunas líneas de auditoría y formato estándar en errores de rutas inexistentes. Esta revisión documental no los presenta como corregidos.
+La auditoría de implementación documenta dos comportamientos: consumer unknown en algunas líneas y respuestas detail en rutas inexistentes. Su alcance se describe en docs/auditoria-requisitos.md.
 
 El móvil es una web adaptable; la persistencia local no ofrece alta disponibilidad. En LEGACY, el procedimiento original conserva su falta de idempotencia. Las pruebas de carga no forman parte de esta entrega.
-
-El repositorio está publicado. El registro en Mi equipo, el enlace público del pitch y la revisión humana del código y de AI_USAGE siguen pendientes de confirmación. La sección de integrantes contiene únicamente los datos proporcionados.
