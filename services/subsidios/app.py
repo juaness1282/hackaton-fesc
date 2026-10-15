@@ -11,6 +11,7 @@ import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import psycopg2
+import gateway_client
 
 
 def connect():
@@ -47,18 +48,27 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/health":
-            return self._send(200, {"status": "UP", "modo": "legacy"})
+            return self._send(200, {"status": "UP", "modo": os.getenv("SUBSIDIOS_MODE", "gateway")})
         return self._send(404, {"error": "ruta no encontrada"})
 
     def do_POST(self):
         if self.path != "/retiros":
             return self._send(404, {"error": "ruta no encontrada"})
-        length = int(self.headers.get("Content-Length", "0"))
-        data = json.loads(self.rfile.read(length) or b"{}")
         try:
+            length = int(self.headers.get("Content-Length", "0"))
+            if not 0 <= length <= 16384:
+                return self._send(413, {"message":"Solicitud demasiado grande"})
+            data = json.loads(self.rfile.read(length) or b"{}")
+            if not isinstance(data, dict):
+                raise ValueError()
+            if os.getenv("SUBSIDIOS_MODE", "gateway") != "legacy":
+                status, payload = gateway_client.send(data, self.headers.get("Idempotency-Key"))
+                return self._send(status, payload)
             movimiento = registrar_retiro(data["documento"], data["fecha"], data.get("motivo", "RETIRO"))
-        except psycopg2.Error as exc:
-            return self._send(500, {"error": str(exc).strip()})
+        except (KeyError, ValueError, TypeError):
+            return self._send(422, {"message":"Solicitud inválida"})
+        except psycopg2.Error:
+            return self._send(503, {"message":"Base no disponible"})
         return self._send(201, {"movimiento": movimiento})
 
     def log_message(self, fmt, *args):
