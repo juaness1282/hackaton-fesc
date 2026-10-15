@@ -1,8 +1,10 @@
 from fastapi import FastAPI, HTTPException, Depends
 from access import consumer
 import db_adapter
+from observability import install
 
 api = FastAPI(title="Legacy Escape", version="1.0.0")
+install(api)
 
 @api.get("/health")
 def health():
