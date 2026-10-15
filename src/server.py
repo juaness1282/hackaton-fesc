@@ -1,9 +1,22 @@
 from fastapi import FastAPI, HTTPException, Depends
 from access import consumer
 import db_adapter
+import inbox
+import dispatcher
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifecycle(api):
+    with inbox.session():
+        pass
+    shutdown,worker=dispatcher.launch()
+    yield
+    shutdown.set()
+    worker.join(timeout=3)
+
 from observability import install
 
-api = FastAPI(title="Legacy Escape", version="1.0.0")
+api = FastAPI(title="Legacy Escape", version="1.0.0", lifespan=lifecycle)
 install(api)
 
 @api.get("/health")
@@ -42,9 +55,24 @@ class RetirementInput(BaseModel):
 def retirement(document: str, body: RetirementInput, author: str=Depends(consumer)):
     if not re.fullmatch(r"[0-9]{1,15}",document):
         raise HTTPException(422,"Documento inválido")
+    payload=body.model_dump(mode="json")
+    payload["document"]=document
     try:
-        result=db_adapter.save_retirement(document,body.requestId,body.date,body.reason,author)
-    except db_adapter.ReusedRequest:
+        job=inbox.enqueue(payload,author)
+    except inbox.ContentConflict:
         raise HTTPException(409,"requestId pertenece a otra solicitud")
-    created,movement=found(result)
-    return JSONResponse(status_code=201 if created else 200,content={"requestId":body.requestId,"movement":movement,"status":"completed"})
+    created=False
+    if job["state"]=="pending":
+        created=dispatcher.deliver(job)
+        job=inbox.load(body.requestId)
+    if job["state"]=="not_found":
+        raise HTTPException(404,"Registro no encontrado")
+    if job["state"]=="conflict":
+        raise HTTPException(409,"requestId pertenece a otra solicitud")
+    code=202 if job["state"]=="pending" else (201 if created else 200)
+    return JSONResponse(status_code=code,content={"requestId":body.requestId,"movement":job["movement"],"status":job["state"]})
+
+@api.get("/api/v1/retirement-requests/{request_id}",dependencies=[Depends(consumer)])
+def request_status(request_id: str):
+    job=found(inbox.load(request_id))
+    return {"requestId":request_id,"status":job["state"],"movement":job["movement"]}

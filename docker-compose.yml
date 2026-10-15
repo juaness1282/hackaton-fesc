@@ -46,10 +46,13 @@ services:
   gateway:
     build: ./src
     env_file: .env
+    environment:
+      STATE_DIR: /state
     ports:
       - '8082:8082'
     volumes:
       - ./logs:/app/logs
+      - gateway-state:/state
 
   # Configuración inicial del gateway.
   # gateway:
@@ -61,4 +64,5 @@ services:
   #     - ./logs:/app/logs
 
 volumes:
+  gateway-state:
   legacy-db-data:
