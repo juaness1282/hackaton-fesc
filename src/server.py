@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from access import consumer
 import db_adapter
 
 api = FastAPI(title="Legacy Escape", version="1.0.0")
@@ -12,14 +13,14 @@ def found(record):
         raise HTTPException(404, "Registro no encontrado")
     return record
 
-@api.get("/api/v1/members/{document}")
+@api.get("/api/v1/members/{document}", dependencies=[Depends(consumer)])
 def member(document: str):
     return found(db_adapter.get_member(document))
 
-@api.get("/api/v1/members/{document}/beneficiaries")
+@api.get("/api/v1/members/{document}/beneficiaries", dependencies=[Depends(consumer)])
 def beneficiaries(document: str):
     return found(db_adapter.get_beneficiaries(document))
 
-@api.get("/api/v1/companies/{id}")
+@api.get("/api/v1/companies/{id}", dependencies=[Depends(consumer)])
 def company(id: str):
     return found(db_adapter.get_company(id))
